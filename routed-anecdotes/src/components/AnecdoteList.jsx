@@ -7,7 +7,7 @@ const AnecdoteList = () => {
     <div>
       <h2>Anecdotes</h2>
       <ul>
-        {anecdotes.map((anecdote) => (
+        {anecdotes.map(anecdote => (
           <li key={anecdote.id}>
             {anecdote.content}{' '}
             <button onClick={() => deleteAnecdote(anecdote.id)}>delete</button>
