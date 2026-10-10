@@ -9,7 +9,7 @@ const getAll = async () => {
   return await response.json()
 }
 
-const create = async (newAnecdote) => {
+const createNew = async (newAnecdote) => {
   const response = await fetch(baseUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -28,4 +28,4 @@ const remove = async (id) => {
   }
 }
 
-export default { getAll, create, remove }
+export default { getAll, createNew, remove }
