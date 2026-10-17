@@ -1,19 +1,27 @@
 import { useState, useEffect } from 'react'
+import { Routes, Route, Link } from 'react-router-dom'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import Notification from './components/Notification'
 import LoginForm from './components/LoginForm'
 import BlogForm from './components/BlogForm'
 import Blog from './components/Blog'
+import BlogView from './components/BlogView'
+import NotFound from './components/NotFound'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
+  const [loaded, setLoaded] = useState(false)
   const [user, setUser] = useState(null)
   const [notification, setNotification] = useState(null)
   const [formVisible, setFormVisible] = useState(false)
 
   useEffect(() => {
-    blogService.getAll().then((data) => setBlogs(data))
+    blogService
+      .getAll()
+      .then((data) => setBlogs(data))
+      .finally(() => setLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -60,7 +68,9 @@ const App = () => {
 
   const handleLike = async (blog) => {
     try {
-      const updated = await blogService.update(blog.id, { likes: blog.likes + 1 })
+      const updated = await blogService.update(blog.id, {
+        likes: blog.likes + 1,
+      })
       setBlogs(blogs.map((b) => (b.id === blog.id ? updated : b)))
     } catch (error) {
       notify(error.message, 'error')
@@ -81,40 +91,68 @@ const App = () => {
 
   const sortedBlogs = [...blogs].sort((a, b) => b.likes - a.likes)
 
+  const home =
+    user === null ? (
+      <LoginForm onLogin={handleLogin} />
+    ) : (
+      <div>
+        {formVisible ? (
+          <div>
+            <BlogForm onCreate={handleCreate} />
+            <button onClick={() => setFormVisible(false)}>cancel</button>
+          </div>
+        ) : (
+          <button onClick={() => setFormVisible(true)}>create new blog</button>
+        )}
+
+        <h2>blogs</h2>
+        {sortedBlogs.map((blog) => (
+          <Blog
+            key={blog.id}
+            blog={blog}
+            user={user}
+            onLike={handleLike}
+            onRemove={handleRemove}
+          />
+        ))}
+      </div>
+    )
+
   return (
     <div>
-      <h1>Blog App</h1>
+      <nav
+        style={{
+          background: '#1976d2',
+          color: 'white',
+          padding: 10,
+          marginBottom: 10,
+        }}
+      >
+        <strong>Blog App</strong>{' '}
+        <Link to="/" style={{ color: 'white', marginLeft: 10 }}>
+          blogs
+        </Link>{' '}
+        {user && (
+          <span style={{ marginLeft: 10 }}>
+            {user.name} logged in <button onClick={handleLogout}>logout</button>
+          </span>
+        )}
+      </nav>
+
       <Notification notification={notification} />
 
-      {user === null ? (
-        <LoginForm onLogin={handleLogin} />
-      ) : (
-        <div>
-          <p>
-            {user.name} logged in <button onClick={handleLogout}>logout</button>
-          </p>
-
-          {formVisible ? (
-            <div>
-              <BlogForm onCreate={handleCreate} />
-              <button onClick={() => setFormVisible(false)}>cancel</button>
-            </div>
-          ) : (
-            <button onClick={() => setFormVisible(true)}>create new blog</button>
-          )}
-
-          <h2>blogs</h2>
-          {sortedBlogs.map((blog) => (
-            <Blog
-              key={blog.id}
-              blog={blog}
-              user={user}
-              onLike={handleLike}
-              onRemove={handleRemove}
-            />
-          ))}
-        </div>
-      )}
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={home} />
+          <Route
+            path="/blogs/:id"
+            element={
+              <BlogView blogs={blogs} loaded={loaded} onLike={handleLike} />
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </ErrorBoundary>
     </div>
   )
 }
