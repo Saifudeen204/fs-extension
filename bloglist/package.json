@@ -1,1 +1,10 @@
-
+{
+  "name": "bloglist",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm run dev --prefix client",
+    "build": "npm run build --prefix client && rm -rf server/dist && cp -r client/dist server/dist",
+    "start": "npm start --prefix server"
+  }
+}
