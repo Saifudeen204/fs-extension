@@ -1,4 +1,4 @@
-name: routed anecdotes tests
+name: bloglist tests
 
 on:
   push:
@@ -15,26 +15,34 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install app dependencies
-        working-directory: routed-anecdotes
-        run: npm ci
+      - name: Install server dependencies
+        working-directory: bloglist/server
+        run: npm install
+
+      - name: Install client dependencies
+        working-directory: bloglist/client
+        run: npm install
 
       - name: Install test dependencies
-        working-directory: routed-anecdotes-tests
+        working-directory: bloglist-tests
         run: npm ci
 
       - name: Install Playwright browsers
-        working-directory: routed-anecdotes-tests
+        working-directory: bloglist-tests
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        working-directory: routed-anecdotes-tests
+        working-directory: bloglist-tests
         run: npx playwright test
+        env:
+          TEST_MONGODB_URI: ${{ secrets.TEST_MONGODB_URI }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          SECRET: ${{ secrets.SECRET }}
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: routed-anecdotes-tests/playwright-report/
+          path: bloglist-tests/playwright-report/
           retention-days: 14
