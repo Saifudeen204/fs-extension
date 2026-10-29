@@ -1,0 +1,23 @@
+const Notification = ({ notification }) => {
+  if (!notification) {
+    return null
+  }
+
+  const style = {
+    color: notification.type === 'error' ? 'red' : 'green',
+    background: '#eee',
+    fontSize: 18,
+    border: `2px solid ${notification.type === 'error' ? 'red' : 'green'}`,
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  }
+
+  return (
+    <div className="notification" style={style}>
+      {notification.message}
+    </div>
+  )
+}
+
+export default Notification
