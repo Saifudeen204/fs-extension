@@ -47,4 +47,13 @@ const remove = async (id) =>
     })
   )
 
-export default { getAll, create, update, remove, setToken }
+const addComment = async (id, comment) =>
+  handle(
+    await fetch(`${baseUrl}/${id}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comment }),
+    })
+  )
+
+export default { getAll, create, update, remove, addComment, setToken }
