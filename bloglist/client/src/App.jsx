@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
-import blogService from './services/blogs'
-import loginService from './services/login'
-import { getUser, saveUser, removeUser } from './services/persistentUser'
+import {
+  useBlogStore,
+  useUserStore,
+} from './store'
 import Notification from './components/Notification'
 import LoginForm from './components/LoginForm'
 import BlogForm from './components/BlogForm'
@@ -15,68 +16,39 @@ import ErrorBoundary from './components/ErrorBoundary'
 
 const App = () => {
   const navigate = useNavigate()
-  const [blogs, setBlogs] = useState([])
-  const [loaded, setLoaded] = useState(false)
-  const [notification, setNotification] = useState(null)
-  const [user, setUser] = useState(() => {
-    const saved = getUser()
-    if (saved) {
-      blogService.setToken(saved.token)
-    }
-    return saved
-  })
+
+  const blogs = useBlogStore((state) => state.blogs)
+  const loaded = useBlogStore((state) => state.loaded)
+  const fetchBlogs = useBlogStore((state) => state.fetchBlogs)
+  const createBlog = useBlogStore((state) => state.createBlog)
+  const likeBlog = useBlogStore((state) => state.likeBlog)
+  const removeBlog = useBlogStore((state) => state.removeBlog)
+  const commentBlog = useBlogStore((state) => state.commentBlog)
+
+  const user = useUserStore((state) => state.user)
+  const login = useUserStore((state) => state.login)
+  const logout = useUserStore((state) => state.logout)
 
   useEffect(() => {
-    blogService
-      .getAll()
-      .then((data) => setBlogs(data))
-      .catch(() => setBlogs([]))
-      .finally(() => setLoaded(true))
-  }, [])
-
-  const notify = (message, type = 'success') => {
-    setNotification({ message, type })
-    setTimeout(() => setNotification(null), 5000)
-  }
+    fetchBlogs()
+  }, [fetchBlogs])
 
   const handleLogin = async (credentials) => {
-    try {
-      const loggedIn = await loginService.login(credentials)
-      saveUser(loggedIn)
-      blogService.setToken(loggedIn.token)
-      setUser(loggedIn)
+    const ok = await login(credentials)
+    if (ok) {
       navigate('/')
-    } catch (error) {
-      notify('wrong username or password', 'error')
     }
   }
 
   const handleLogout = () => {
-    removeUser()
-    blogService.setToken(null)
-    setUser(null)
+    logout()
     navigate('/')
   }
 
   const handleCreate = async (newBlog) => {
-    try {
-      const created = await blogService.create(newBlog)
-      setBlogs(blogs.concat(created))
-      notify(`a new blog ${created.title} by ${created.author} added`)
+    const ok = await createBlog(newBlog)
+    if (ok) {
       navigate('/')
-    } catch (error) {
-      notify(error.message, 'error')
-    }
-  }
-
-  const handleLike = async (blog) => {
-    try {
-      const updated = await blogService.update(blog.id, {
-        likes: blog.likes + 1,
-      })
-      setBlogs(blogs.map((b) => (b.id === blog.id ? updated : b)))
-    } catch (error) {
-      notify(error.message, 'error')
     }
   }
 
@@ -84,21 +56,9 @@ const App = () => {
     if (!window.confirm(`Remove blog ${blog.title} by ${blog.author}?`)) {
       return
     }
-    try {
-      await blogService.remove(blog.id)
-      setBlogs(blogs.filter((b) => b.id !== blog.id))
+    const ok = await removeBlog(blog)
+    if (ok) {
       navigate('/')
-    } catch (error) {
-      notify(error.message, 'error')
-    }
-  }
-
-  const handleComment = async (blog, comment) => {
-    try {
-      const updated = await blogService.addComment(blog.id, comment)
-      setBlogs(blogs.map((b) => (b.id === blog.id ? updated : b)))
-    } catch (error) {
-      notify(error.message, 'error')
     }
   }
 
@@ -134,7 +94,7 @@ const App = () => {
         )}
       </nav>
 
-      <Notification notification={notification} />
+      <Notification />
 
       <ErrorBoundary>
         <Routes>
@@ -146,9 +106,9 @@ const App = () => {
                 blogs={blogs}
                 loaded={loaded}
                 user={user}
-                onLike={handleLike}
+                onLike={likeBlog}
                 onRemove={handleRemove}
-                onComment={handleComment}
+                onComment={commentBlog}
               />
             }
           />
